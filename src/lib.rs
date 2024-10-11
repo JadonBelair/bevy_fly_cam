@@ -14,7 +14,7 @@ pub struct FlyCamSettings {
 impl Default for FlyCamSettings {
     fn default() -> Self {
         Self {
-            sensitivity: 5.0,
+            sensitivity: 0.08,
             move_speed: 10.0,
         }
     }
@@ -82,7 +82,6 @@ fn lock_mouse(mut query: Query<&mut Window, With<PrimaryWindow>>) {
 
 // rotates the flycam with the mouse
 fn look_fly_cam(
-    time: Res<Time>,
     settings: Res<FlyCamSettings>,
     mut mouse_motion: EventReader<MouseMotion>,
     mut query: Query<&mut Transform, With<FlyCameraMarker>>,
@@ -90,8 +89,8 @@ fn look_fly_cam(
     for mut transform in &mut query {
         for motion in mouse_motion.read() {
             let (mut yaw, mut pitch, _) = transform.rotation.to_euler(EulerRot::YXZ);
-            pitch -= (motion.delta.y * settings.sensitivity * time.delta_seconds()).to_radians();
-            yaw -= (motion.delta.x * settings.sensitivity * time.delta_seconds()).to_radians();
+            pitch -= (motion.delta.y * settings.sensitivity).to_radians();
+            yaw -= (motion.delta.x * settings.sensitivity).to_radians();
 
             pitch = pitch.clamp(f32::to_radians(-89.0), f32::to_radians(89.0));
 
