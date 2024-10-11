@@ -2,7 +2,7 @@
 
 A simple plugin to add a 3D free cam with fps controls to your Bevy project
 
-## Basic example
+## Example Usage
 
 ```rust
 use bevy::prelude::*;

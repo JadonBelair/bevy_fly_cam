@@ -4,6 +4,7 @@ use bevy::{
     window::{CursorGrabMode, PrimaryWindow},
 };
 
+/// Settings for mouse sensitivity and movement speed
 #[derive(Resource)]
 pub struct FlyCamSettings {
     pub sensitivity: f32,
@@ -19,14 +20,15 @@ impl Default for FlyCamSettings {
     }
 }
 
+/// Allows customizing the different movement keybinds
 #[derive(Resource)]
 pub struct FlyCamKeybinds {
-    move_forward: KeyCode,
-    move_back: KeyCode,
-    move_left: KeyCode,
-    move_right: KeyCode,
-    move_up: KeyCode,
-    move_down: KeyCode,
+    pub move_forward: KeyCode,
+    pub move_back: KeyCode,
+    pub move_left: KeyCode,
+    pub move_right: KeyCode,
+    pub move_up: KeyCode,
+    pub move_down: KeyCode,
 }
 
 impl Default for FlyCamKeybinds {
@@ -42,9 +44,12 @@ impl Default for FlyCamKeybinds {
     }
 }
 
+/// Marker for querying flycams
 #[derive(Component)]
-pub struct CameraMarker;
+pub struct FlyCameraMarker;
 
+/// This plugin will add all the nessesary resources
+/// and systems for a first-person flycam
 pub struct FlyCamPlugin;
 impl Plugin for FlyCamPlugin {
     fn build(&self, app: &mut App) {
@@ -57,27 +62,30 @@ impl Plugin for FlyCamPlugin {
     }
 }
 
+// spawns the flycam
 fn setup_fly_cam(mut cmd: Commands) {
     cmd.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(0.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        CameraMarker,
+        FlyCameraMarker,
     ));
 }
 
+// locks/hides the mouse on startup
 fn lock_mouse(mut query: Query<&mut Window, With<PrimaryWindow>>) {
     let mut window = query.single_mut();
     window.cursor.grab_mode = CursorGrabMode::Locked;
     window.cursor.visible = false;
 }
 
+// rotates the flycam with the mouse
 fn look_fly_cam(
     time: Res<Time>,
     settings: Res<FlyCamSettings>,
     mut mouse_motion: EventReader<MouseMotion>,
-    mut query: Query<&mut Transform, With<CameraMarker>>,
+    mut query: Query<&mut Transform, With<FlyCameraMarker>>,
 ) {
     for mut transform in &mut query {
         for motion in mouse_motion.read() {
@@ -93,37 +101,38 @@ fn look_fly_cam(
     }
 }
 
+// move the flycam with the set keybinds
 fn move_fly_cam(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     settings: Res<FlyCamSettings>,
     keybinds: Res<FlyCamKeybinds>,
-    mut query: Query<&mut Transform, With<CameraMarker>>,
+    mut query: Query<&mut Transform, With<FlyCameraMarker>>,
 ) {
-    let mut transform = query.single_mut();
+    for mut transform in &mut query {
+        let mut delta = Vec3::ZERO;
 
-    let mut delta = Vec3::ZERO;
+        let forward = -transform.local_z().as_vec3();
+        let right = transform.local_x().as_vec3();
+        if keyboard_input.pressed(keybinds.move_forward) {
+            delta += forward;
+        }
+        if keyboard_input.pressed(keybinds.move_back) {
+            delta -= forward;
+        }
+        if keyboard_input.pressed(keybinds.move_right) {
+            delta += right;
+        }
+        if keyboard_input.pressed(keybinds.move_left) {
+            delta -= right;
+        }
+        if keyboard_input.pressed(keybinds.move_up) {
+            delta.y += 1.0;
+        }
+        if keyboard_input.pressed(keybinds.move_down) {
+            delta.y -= 1.0;
+        }
 
-    let back = *transform.local_z();
-    let right = *transform.local_x();
-    if keyboard_input.pressed(keybinds.move_forward) {
-        delta -= back;
+        transform.translation += delta.normalize_or_zero() * settings.move_speed * time.delta_seconds();
     }
-    if keyboard_input.pressed(keybinds.move_back) {
-        delta += back;
-    }
-    if keyboard_input.pressed(keybinds.move_right) {
-        delta += right;
-    }
-    if keyboard_input.pressed(keybinds.move_left) {
-        delta -= right;
-    }
-    if keyboard_input.pressed(keybinds.move_up) {
-        delta.y += 1.0;
-    }
-    if keyboard_input.pressed(keybinds.move_down) {
-        delta.y -= 1.0;
-    }
-
-    transform.translation += delta.normalize_or_zero() * settings.move_speed * time.delta_seconds();
 }
