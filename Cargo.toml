@@ -1,6 +1,6 @@
 [package]
 name = "bevy_fly_cam"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "GPL-3.0-only"
 description = "A Simple Flycam plugin for Bevy 0.14"
