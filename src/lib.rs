@@ -19,11 +19,25 @@ impl Default for FlyCamSettings {
     }
 }
 
-impl FlyCamSettings {
-    pub fn new(sensitivity: f32, move_speed: f32) -> Self {
+#[derive(Resource)]
+pub struct FlyCamKeybinds {
+    move_forward: KeyCode,
+    move_back: KeyCode,
+    move_left: KeyCode,
+    move_right: KeyCode,
+    move_up: KeyCode,
+    move_down: KeyCode,
+}
+
+impl Default for FlyCamKeybinds {
+    fn default() -> Self {
         Self {
-            sensitivity,
-            move_speed,
+            move_forward: KeyCode::KeyW,
+            move_back: KeyCode::KeyS,
+            move_left: KeyCode::KeyA,
+            move_right: KeyCode::KeyD,
+            move_up: KeyCode::Space,
+            move_down: KeyCode::ShiftLeft,
         }
     }
 }
@@ -35,6 +49,7 @@ pub struct FlyCamPlugin;
 impl Plugin for FlyCamPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<FlyCamSettings>();
+        app.init_resource::<FlyCamKeybinds>();
         app.add_systems(Startup, lock_mouse);
         app.add_systems(Startup, setup_fly_cam);
         app.add_systems(Update, look_fly_cam);
@@ -82,31 +97,31 @@ fn move_fly_cam(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     settings: Res<FlyCamSettings>,
+    keybinds: Res<FlyCamKeybinds>,
     mut query: Query<&mut Transform, With<CameraMarker>>,
 ) {
     let mut transform = query.single_mut();
 
     let mut delta = Vec3::ZERO;
 
-    let forward = *transform.local_z();
+    let back = *transform.local_z();
     let right = *transform.local_x();
-    if keyboard_input.pressed(KeyCode::KeyW) {
-        delta -= forward;
+    if keyboard_input.pressed(keybinds.move_forward) {
+        delta -= back;
     }
-    if keyboard_input.pressed(KeyCode::KeyS) {
-        delta += forward;
+    if keyboard_input.pressed(keybinds.move_back) {
+        delta += back;
     }
-    if keyboard_input.pressed(KeyCode::KeyD) {
+    if keyboard_input.pressed(keybinds.move_right) {
         delta += right;
     }
-    if keyboard_input.pressed(KeyCode::KeyA) {
+    if keyboard_input.pressed(keybinds.move_left) {
         delta -= right;
     }
-    delta = delta.normalize_or_zero();
-    if keyboard_input.pressed(KeyCode::Space) {
+    if keyboard_input.pressed(keybinds.move_up) {
         delta.y += 1.0;
     }
-    if keyboard_input.pressed(KeyCode::ShiftLeft) {
+    if keyboard_input.pressed(keybinds.move_down) {
         delta.y -= 1.0;
     }
 
