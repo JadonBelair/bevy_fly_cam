@@ -9,6 +9,7 @@ use bevy::{
 pub struct FlyCamSettings {
     pub sensitivity: f32,
     pub move_speed: f32,
+    pub y_lock: bool,
 }
 
 impl Default for FlyCamSettings {
@@ -16,6 +17,7 @@ impl Default for FlyCamSettings {
         Self {
             sensitivity: 0.08,
             move_speed: 10.0,
+            y_lock: false,
         }
     }
 }
@@ -111,7 +113,11 @@ fn move_fly_cam(
     for mut transform in &mut query {
         let mut delta = Vec3::ZERO;
 
-        let forward = -transform.local_z().as_vec3();
+        let mut forward = -transform.local_z().as_vec3();
+        if settings.y_lock {
+            forward.y = 0.0;
+        }
+
         let right = transform.local_x().as_vec3();
         if keyboard_input.pressed(keybinds.move_forward) {
             delta += forward;
@@ -125,6 +131,11 @@ fn move_fly_cam(
         if keyboard_input.pressed(keybinds.move_left) {
             delta -= right;
         }
+
+        if settings.y_lock {
+            delta = delta.normalize_or_zero();
+        }
+
         if keyboard_input.pressed(keybinds.move_up) {
             delta.y += 1.0;
         }
@@ -132,6 +143,10 @@ fn move_fly_cam(
             delta.y -= 1.0;
         }
 
-        transform.translation += delta.normalize_or_zero() * settings.move_speed * time.delta_seconds();
+        if !settings.y_lock {
+            delta = delta.normalize_or_zero();
+        }
+
+        transform.translation += delta * settings.move_speed * time.delta_seconds();
     }
 }
